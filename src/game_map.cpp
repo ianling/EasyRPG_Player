@@ -1304,6 +1304,7 @@ void Game_Map::Update(MapUpdateAsyncContext& actx, bool is_preupdate) {
 		Main_Data::game_party->UpdateTimers();
 		Main_Data::game_screen->Update();
 		Main_Data::game_pictures->Update(false);
+		Main_Data::game_palette_overrides->Update();
 	}
 
 	if (!actx.IsActive() || actx.IsForegroundEvent()) {
@@ -2289,7 +2290,7 @@ void Game_Map::Parallax::ChangeBG(const Params& params) {
 	Scene_Map* scene = (Scene_Map*)Scene::Find(Scene::Map).get();
 	if (!scene || !scene->spriteset)
 		return;
-	scene->spriteset->ParallaxUpdated();
+	scene->spriteset->ParallaxUpdated(false);
 }
 
 void Game_Map::Parallax::ClearChangedBG() {

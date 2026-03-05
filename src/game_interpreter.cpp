@@ -818,6 +818,8 @@ bool Game_Interpreter::ExecuteCommand(lcf::rpg::EventCommand const& com) {
 			return CmdSetup<&Game_Interpreter::CommandEasyRpgCloneMapEvent, 10>(com);
 		case Cmd::EasyRpg_DestroyMapEvent:
 			return CmdSetup<&Game_Interpreter::CommandEasyRpgDestroyMapEvent, 2>(com);
+		case Cmd(2059): // EasyRpg_AddColorOverride
+			return CmdSetup<&Game_Interpreter::CommandEasyRpgOverrideColor, 25>(com);
 		default:
 			return true;
 	}
@@ -5750,6 +5752,49 @@ bool Game_Interpreter::CommandEasyRpgDestroyMapEvent(lcf::rpg::EventCommand cons
 	}
 
 	_async_op = AsyncOp::MakeDestroyMapEvent(target_event);
+
+	return true;
+}
+
+bool Game_Interpreter::CommandEasyRpgOverrideColor(lcf::rpg::EventCommand const& com) {
+	if (!Player::HasEasyRpgExtensions()) {
+		return true;
+	}
+
+	Game_PaletteOverrides::OverrideParams params;
+	const int id = ValueOrVariable(com.parameters[0], com.parameters[1]);
+	// params.palette_color_index = ValueOrVariable(com.parameters[2], com.parameters[3]);
+	params.red_original = ValueOrVariable(com.parameters[4], com.parameters[5]);
+	params.green_original = ValueOrVariable(com.parameters[6], com.parameters[7]);
+	params.blue_original = ValueOrVariable(com.parameters[8], com.parameters[9]);
+	params.alpha_original = ValueOrVariable(com.parameters[10], com.parameters[11]);
+	params.red_replacement = ValueOrVariable(com.parameters[12], com.parameters[13]);
+	params.green_replacement = ValueOrVariable(com.parameters[14], com.parameters[15]);
+	params.blue_replacement = ValueOrVariable(com.parameters[16], com.parameters[17]);
+	params.alpha_replacement = ValueOrVariable(com.parameters[18], com.parameters[19]);
+	// params.palette_color_index_replacement = ValueOrVariable(com.parameters[20], com.parameters[21]);
+	params.flags = com.parameters[22];
+	params.affects_flags = com.parameters[23];
+	params.target_int = com.parameters[24];
+	params.target_str = ToString(com.string);
+
+	if (id <= 0) {
+		Output::Error("AddColorOverride: Requested invalid override ID ({})", id);
+	}
+
+	Main_Data::game_palette_overrides->AddOverride(id, params);
+
+	if ((params.affects_flags & Game_PaletteOverrides::Affects::Chipset) != 0) {
+		// force chipset to reload
+		if (const auto scene = dynamic_cast<Scene_Map *>(Scene::Find(Scene::Map).get()))
+			scene->spriteset->ChipsetUpdated();
+	}
+
+	if ((params.affects_flags & Game_PaletteOverrides::Affects::Panorama) != 0) {
+		// force panorama to reload
+		if (const auto scene = dynamic_cast<Scene_Map *>(Scene::Find(Scene::Map).get()))
+			scene->spriteset->ParallaxUpdated(true);
+	}
 
 	return true;
 }

@@ -53,8 +53,10 @@ public:
 
 	/**
 	 * Notifies that the map's parallax has changed.
+	 * If force is true, forces the bitmap to be reloaded even if the panorama name has not been modified.
+	 * Doing so may cause issues with the parallax's scrolling position resetting.
 	 */
-	void ParallaxUpdated();
+	void ParallaxUpdated(bool force);
 
 	/**
 	 * Notifies that the System graphic has changed.

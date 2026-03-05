@@ -246,6 +246,7 @@ void Scene_Battle::CreateUi() {
 void Scene_Battle::UpdateScreen() {
 	Main_Data::game_screen->Update();
 	Main_Data::game_pictures->Update(true);
+	Main_Data::game_palette_overrides->Update();
 }
 
 void Scene_Battle::UpdateBattlers() {

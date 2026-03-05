@@ -30,6 +30,7 @@ class Game_System;
 class Game_Player;
 class Game_Screen;
 class Game_Pictures;
+class Game_PaletteOverrides;
 class Game_Windows;
 class Game_Actors;
 class Game_Party;
@@ -52,6 +53,7 @@ namespace Main_Data {
 	extern std::unique_ptr<Game_Strings> game_strings;
 	extern std::unique_ptr<Game_Screen> game_screen;
 	extern std::unique_ptr<Game_Pictures> game_pictures;
+	extern std::unique_ptr<Game_PaletteOverrides> game_palette_overrides;
 	extern std::unique_ptr<Game_Windows> game_windows;
 	extern std::unique_ptr<Game_Player> game_player;
 	extern std::unique_ptr<Game_Actors> game_actors;

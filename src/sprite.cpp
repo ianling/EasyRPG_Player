@@ -93,15 +93,16 @@ BitmapRef Sprite::Refresh(Rect& rect) {
 	bool no_tone = tone_effect == Tone();
 	bool no_flash = flash_effect.alpha == 0;
 	bool no_flip = !flipx_effect && !flipy_effect;
-	bool no_effects = no_tone && no_flash && no_flip;
+	bool no_effects = no_tone && no_flash && no_flip && palette_overrides.empty();
 	bool effects_changed = tone_effect != current_tone ||
 		flash_effect != current_flash ||
 		flipx_effect != current_flip_x ||
 		flipy_effect != current_flip_y;
 	bool effects_rect_changed = rect != bitmap_effects_src_rect;
 
-	if (no_effects || effects_changed || effects_rect_changed || bitmap_changed) {
+	if (no_effects || effects_changed || effects_rect_changed || bitmap_changed || palette_overrides_changed) {
 		bitmap_effects.reset();
+		palette_overrides_changed = false;
 	}
 
 	if (no_effects) {
@@ -114,7 +115,7 @@ BitmapRef Sprite::Refresh(Rect& rect) {
 		current_flip_x = flipx_effect;
 		current_flip_y = flipy_effect;
 
-		bitmap_effects = Cache::SpriteEffect(bitmap, rect, flipx_effect, flipy_effect, current_tone, current_flash);
+		bitmap_effects = Cache::SpriteEffect(bitmap, rect, flipx_effect, flipy_effect, current_tone, current_flash, palette_overrides);
 		bitmap_effects_src_rect = rect;
 
 		return bitmap_effects;

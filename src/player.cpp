@@ -49,6 +49,7 @@
 #include "game_player.h"
 #include "game_switches.h"
 #include "game_screen.h"
+#include "game_palette_overrides.h"
 #include "game_pictures.h"
 #include "game_system.h"
 #include "game_variables.h"
@@ -952,6 +953,7 @@ void Player::ResetGameObjects() {
 	// because Setup() modified pictures array
 	Main_Data::game_screen = std::make_unique<Game_Screen>();
 	Main_Data::game_pictures = std::make_unique<Game_Pictures>();
+	Main_Data::game_palette_overrides = std::make_unique<Game_PaletteOverrides>();
 	Main_Data::game_windows = std::make_unique<Game_Windows>();
 
 	Main_Data::game_actors = std::make_unique<Game_Actors>();

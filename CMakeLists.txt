@@ -200,6 +200,8 @@ add_library(${PROJECT_NAME} OBJECT
 	src/game_message.h
 	src/game_message_terms.cpp
 	src/game_message_terms.h
+	src/game_palette_overrides.cpp
+	src/game_palette_overrides.h
 	src/game_party_base.cpp
 	src/game_party_base.h
 	src/game_party.cpp

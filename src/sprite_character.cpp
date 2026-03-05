@@ -20,6 +20,7 @@
 #include "cache.h"
 #include "game_map.h"
 #include "bitmap.h"
+#include "main_data.h"
 #include "output.h"
 #include "player.h"
 
@@ -52,6 +53,15 @@ void Sprite_Character::Draw(Bitmap &dst) {
 
 	int bush_split = 4 - character->GetBushDepth();
 	SetBushDepth(bush_split > 3 ? 0 : GetHeight() / bush_split);
+
+	if (Main_Data::game_palette_overrides->OverridesChanged(GetPaletteOverridesChangeSeqNum()))
+		SetPaletteOverrides(
+			Main_Data::game_palette_overrides->CurrentChangeSeqNumber(),
+			Main_Data::game_palette_overrides->GetEffectiveOverrides(
+				Game_PaletteOverrides::Affects::Charset,
+				-1,
+				character_name
+		));
 
 	Sprite::Draw(dst);
 }

@@ -16,6 +16,8 @@
  */
 
 // Headers
+#include "game_palette_overrides.h"
+#include "main_data.h"
 #ifdef _MSC_VER
 #  pragma warning(disable: 4003)
 #endif
@@ -469,7 +471,7 @@ BitmapRef Cache::Tile(std::string_view filename, int tile_id) {
 	} else { return it->second.lock(); }
 }
 
-BitmapRef Cache::SpriteEffect(const BitmapRef& src_bitmap, const Rect& rect, bool flip_x, bool flip_y, const Tone& tone, const Color& blend) {
+BitmapRef Cache::SpriteEffect(const BitmapRef& src_bitmap, const Rect& rect, bool flip_x, bool flip_y, const Tone& tone, const Color& blend, const std::vector<const Game_PaletteOverrides::OverrideParams*>& palette_overrides) {
 	std::string id = ToString(src_bitmap->GetId());
 
 	if (id.empty()) {
@@ -498,9 +500,32 @@ BitmapRef Cache::SpriteEffect(const BitmapRef& src_bitmap, const Rect& rect, boo
 			return Bitmap::Create(rect.width, rect.height, true);
 		};
 
-		if (tone != Tone()) {
+		if (!palette_overrides.empty()) {
 			bitmap_effects = create();
-			bitmap_effects->ToneBlit(0, 0, *src_bitmap, rect, tone, Opacity::Opaque());
+			bool first = true;
+			for (const auto override : palette_overrides) {
+				if (first) {
+					bitmap_effects->ReplaceColorBlit(0, 0, *src_bitmap, rect,
+						override->red_original, override->green_original, override->blue_original, override->alpha_original,
+						override->red_replacement, override->green_replacement, override->blue_replacement, override->alpha_replacement, (override->flags & Game_PaletteOverrides::Flags::IgnoreAlpha) != 0);
+					first = false;
+				}
+				else {
+					bitmap_effects->ReplaceColorBlit(0, 0, *bitmap_effects, bitmap_effects->GetRect(),
+						override->red_original, override->green_original, override->blue_original, override->alpha_original,
+						override->red_replacement, override->green_replacement, override->blue_replacement, override->alpha_replacement, (override->flags & Game_PaletteOverrides::Flags::IgnoreAlpha) != 0);
+				}
+			}
+		}
+
+		if (tone != Tone()) {
+			if (bitmap_effects) {
+				// palette overrides were applied
+				bitmap_effects->ToneBlit(0, 0, *bitmap_effects, bitmap_effects->GetRect(), tone, Opacity::Opaque());
+			} else {
+				bitmap_effects = create();
+				bitmap_effects->ToneBlit(0, 0, *src_bitmap, rect, tone, Opacity::Opaque());
+			}
 		}
 
 		if (blend != Color()) {

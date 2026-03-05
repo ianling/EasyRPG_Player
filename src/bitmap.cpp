@@ -528,9 +528,12 @@ void Bitmap::Init(int width, int height, void* data, int pitch, bool destroy) {
 	if (!pitch)
 		pitch = width * format.bytes;
 
-	bitmap.reset(pixman_image_create_bits(pixman_format, width, height, (uint32_t*) data, pitch));
+	if (data == nullptr)
+		bitmap.reset(pixman_image_create_bits(pixman_format, width, height, nullptr, pitch));
+	else
+		bitmap.reset(pixman_image_create_bits_no_clear(pixman_format, width, height, (uint32_t*) data, pitch));
 
-	if (bitmap == NULL) {
+	if (bitmap == nullptr) {
 		Output::Error("Couldn't create {}x{} image.", width, height);
 	}
 
@@ -539,7 +542,7 @@ void Bitmap::Init(int width, int height, void* data, int pitch, bool destroy) {
 		pixman_image_set_indexed(bitmap.get(), &palette);
 	}
 
-	if (data != NULL && destroy)
+	if (data != nullptr && destroy)
 		pixman_image_set_destroy_function(bitmap.get(), destroy_func, data);
 }
 
@@ -1118,6 +1121,60 @@ void Bitmap::Flip(bool horizontal, bool vertical) {
 	pixman_image_composite32(PIXMAN_OP_SRC,
 							 temp.get(), nullptr, bitmap.get(),
 							 0, 0, 0, 0, 0, 0, w, h);
+}
+
+void Bitmap::ReplaceColorBlit(const int x, const int y, Bitmap const& src, Rect const& src_rect,
+	const uint8_t r_orig, const uint8_t g_orig, const uint8_t b_orig, const uint8_t a_orig,
+	const uint8_t r_replacement, const uint8_t g_replacement, const uint8_t b_replacement, const uint8_t a_replacement,
+	const bool ignore_alpha
+	) {
+	if (&src != this) {
+		pixman_image_composite32(src.GetOperator(),
+		src.bitmap.get(), nullptr, bitmap.get(),
+		src_rect.x, src_rect.y,
+		0, 0,
+		x, y,
+		src_rect.width, src_rect.height);
+	}
+
+	const uint16_t limit_height = std::min<uint16_t>(src_rect.height, height());
+	const uint16_t limit_width = std::min<uint16_t>(src_rect.width, width());
+	const int next_row = pitch() / sizeof(uint32_t);
+	auto* pixels = static_cast<uint32_t *>(this->pixels());
+	pixels = pixels + (y - 1) * next_row + x;
+
+	uint32_t needle = r_orig << pixel_format.r.shift
+							| g_orig << pixel_format.g.shift
+							| b_orig << pixel_format.b.shift
+							| a_orig << pixel_format.a.shift;
+	uint32_t replacement = r_replacement << pixel_format.r.shift
+							| g_replacement << pixel_format.g.shift
+							| b_replacement << pixel_format.b.shift
+							| a_replacement << pixel_format.a.shift;
+
+	if (ignore_alpha) {
+		const uint32_t no_alpha_bitmask = ~pixel_format.a.mask;
+		needle &= no_alpha_bitmask;
+		replacement &= no_alpha_bitmask;
+
+		for (int i = 0; i < limit_height; i++) {
+			pixels += next_row;
+			for (int j = 0; j < limit_width; j++) {
+				if ((pixels[j] & no_alpha_bitmask) == needle) {
+					pixels[j] = replacement | pixels[j] & pixel_format.a.mask;
+				}
+			}
+		}
+	} else {
+		for (int i = 0; i < limit_height; i++) {
+			pixels += next_row;
+			for (int j = 0; j < limit_width; j++) {
+				if (pixels[j] == needle) {
+					pixels[j] = replacement;
+				}
+			}
+		}
+	}
 }
 
 void Bitmap::MaskedBlit(Rect const& dst_rect, Bitmap const& mask, int mx, int my, Color const& color) {

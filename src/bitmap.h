@@ -526,6 +526,27 @@ public:
 	void Flip(bool horizontal, bool vertical);
 
 	/**
+	 *
+	 * @param x x position.
+	 * @param y y position.
+	 * @param src source bitmap.
+	 * @param src_rect source bitmap rect.
+	 * @param r_orig red color component to replace
+	 * @param g_orig green color component to replace
+	 * @param b_orig blue color component to replace
+	 * @param a_orig alpha color component to replace
+	 * @param r_replacement replacement red color component
+	 * @param g_replacement replacement green color component
+	 * @param b_replacement replacement blue color component
+	 * @param a_replacement replacement alpha color component
+	 * @param ignore_alpha if true, ignores the a_orig and a_replacement parameters, omitting alpha from the comparison and retaining the original alpha in replacements
+	 */
+	void ReplaceColorBlit(int x, int y, Bitmap const& src, Rect const& src_rect,
+		uint8_t r_orig, uint8_t g_orig, uint8_t b_orig, uint8_t a_orig,
+		uint8_t r_replacement, uint8_t g_replacement, uint8_t b_replacement, uint8_t a_replacement,
+		bool ignore_alpha);
+
+	/**
 	 * Blits source bitmap to this one through a mask bitmap.
 	 *
 	 * @param dst_rect destination rectangle.

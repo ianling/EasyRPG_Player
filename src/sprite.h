@@ -19,8 +19,11 @@
 #define EP_SPRITE_H
 
 // Headers
+#include <utility>
+
 #include "color.h"
 #include "drawable.h"
+#include "game_palette_overrides.h"
 #include "memory_management.h"
 #include "rect.h"
 #include "tone.h"
@@ -79,6 +82,9 @@ public:
 	void SetBlendColor(Color color);
 	Tone GetTone() const;
 	void SetTone(Tone tone);
+	[[nodiscard]] uint32_t GetPaletteOverridesChangeSeqNum() const;
+	[[nodiscard]] std::vector<const Game_PaletteOverrides::OverrideParams *> GetPaletteOverrides() const;
+	void SetPaletteOverrides(uint32_t change_seq_num, std::vector<const Game_PaletteOverrides::OverrideParams *> overrides);
 
 	/** @return wave depth in pixels */
 	int GetWaverDepth() const;
@@ -125,6 +131,7 @@ private:
 	int waver_effect_depth = 0;
 	double waver_effect_phase = 0.0;
 	Color flash_effect;
+	std::vector<const Game_PaletteOverrides::OverrideParams*> palette_overrides;
 
 	BitmapRef bitmap_effects;
 
@@ -137,6 +144,8 @@ private:
 	bool current_flip_x = false;
 	bool current_flip_y = false;
 	bool bitmap_changed = true;
+	bool palette_overrides_changed = false;
+	uint32_t palette_overrides_change_seq_num = 0;
 
 	void BlitScreen(Bitmap& dst);
 	void BlitScreenIntern(Bitmap& dst, Bitmap const& draw_bitmap,
@@ -262,6 +271,20 @@ inline Tone Sprite::GetTone() const {
 
 inline void Sprite::SetTone(Tone tone) {
 	tone_effect = tone;
+}
+
+inline uint32_t Sprite::GetPaletteOverridesChangeSeqNum() const {
+	return palette_overrides_change_seq_num;
+}
+
+inline std::vector<const Game_PaletteOverrides::OverrideParams*> Sprite::GetPaletteOverrides() const {
+	return palette_overrides;
+}
+
+inline void Sprite::SetPaletteOverrides(uint32_t change_seq_num, std::vector<const Game_PaletteOverrides::OverrideParams*> overrides) {
+	palette_overrides_change_seq_num = change_seq_num;
+	palette_overrides = std::move(overrides);
+	palette_overrides_changed = true;
 }
 
 inline int Sprite::GetWaverDepth() const {

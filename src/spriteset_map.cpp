@@ -45,7 +45,7 @@ Spriteset_Map::Spriteset_Map() {
 		frame = std::make_unique<Frame>();
 	}
 
-	ParallaxUpdated();
+	ParallaxUpdated(false);
 
 	Refresh();
 
@@ -135,16 +135,24 @@ void Spriteset_Map::ChipsetUpdated() {
 	}
 }
 
-void Spriteset_Map::ParallaxUpdated() {
-	std::string name = Game_Map::Parallax::GetName();
-	if (name != panorama_name) {
+void Spriteset_Map::ParallaxUpdated(const bool force) {
+	const std::string name = Game_Map::Parallax::GetName();
+	if (force && name == panorama_name && !panorama_name.empty()) {
+		// at time of writing, this means a palette override affecting the panorama was added.
+		// bypass the AsyncHandler stuff and just call the callback directly
+		OnPanoramaSpriteReady(new FileRequestResult{"", name, -1, true});
+		return;
+	}
+
+	if (force || name != panorama_name) {
 		panorama_name = name;
 		if (!name.empty()) {
 			FileRequestAsync* request = AsyncHandler::RequestFile("Panorama", panorama_name);
-			request->SetGraphicFile(true);
-			request->SetImportantFile(true);
 			panorama_request_id = request->Bind(&Spriteset_Map::OnPanoramaSpriteReady, this);
+			request->SetImportantFile(true);
+			request->SetGraphicFile(true);
 			request->Start();
+			return;
 		}
 	}
 
@@ -273,7 +281,37 @@ void Spriteset_Map::CreateAirshipShadowSprite(bool create_x_clone, bool create_y
 
 void Spriteset_Map::OnTilemapSpriteReady(FileRequestResult*) {
 	if (!Game_Map::GetChipsetName().empty()) {
-		tilemap->SetChipset(Cache::Chipset(Game_Map::GetChipsetName()));
+		auto chipset = Cache::Chipset(Game_Map::GetChipsetName());
+
+		const std::vector<const Game_PaletteOverrides::OverrideParams*> overrides =
+			Main_Data::game_palette_overrides->GetEffectiveOverrides(
+				Game_PaletteOverrides::Affects::Chipset,
+				-1,
+				std::string(Game_Map::GetChipsetName()));
+
+		if (!overrides.empty()) {
+			const BitmapRef bitmap = Bitmap::Create(480, 256);
+
+			bool first = true;
+			for (const auto override : overrides) {
+				if (first) {
+					bitmap->ReplaceColorBlit(0, 0, *chipset, chipset->GetRect(),
+			override->red_original, override->green_original, override->blue_original, override->alpha_original,
+			override->red_replacement, override->green_replacement, override->blue_replacement, override->alpha_replacement, (override->flags & Game_PaletteOverrides::Flags::IgnoreAlpha) != 0);
+					first = false;
+				}
+				else {
+					bitmap->ReplaceColorBlit(0, 0, *bitmap, bitmap->GetRect(),
+					override->red_original, override->green_original, override->blue_original, override->alpha_original,
+					override->red_replacement, override->green_replacement, override->blue_replacement, override->alpha_replacement, (override->flags & Game_PaletteOverrides::Flags::IgnoreAlpha) != 0);
+				}
+			}
+
+			tilemap->SetChipset(bitmap);
+		} else {
+			tilemap->SetChipset(chipset);
+		}
+
 	}
 	else {
 		tilemap->SetChipset(Bitmap::Create(480, 256));
@@ -288,8 +326,45 @@ void Spriteset_Map::OnTilemapSpriteReady(FileRequestResult*) {
 }
 
 void Spriteset_Map::OnPanoramaSpriteReady(FileRequestResult* result) {
-	BitmapRef panorama_bmp = Cache::Panorama(result->file);
-	panorama->SetBitmap(panorama_bmp);
+	auto panorama_bmp = Cache::Panorama(result->file);
+
+	if (!result->file.empty()) {
+		const std::vector<const Game_PaletteOverrides::OverrideParams*> overrides =
+		Main_Data::game_palette_overrides->GetEffectiveOverrides(
+			Game_PaletteOverrides::Affects::Panorama,
+			-1,
+			std::string(result->file));
+
+		if (!overrides.empty()) {
+			auto width = panorama_bmp->GetWidth();
+			auto height = panorama_bmp->GetHeight();
+			const BitmapRef bitmap = Bitmap::Create(width, height);
+
+			bool first = true;
+			for (const auto override : overrides) {
+				if (first) {
+					bitmap->ReplaceColorBlit(0, 0, *panorama_bmp, panorama_bmp->GetRect(),
+						override->red_original, override->green_original, override->blue_original, override->alpha_original,
+						override->red_replacement, override->green_replacement, override->blue_replacement, override->alpha_replacement, (override->flags & Game_PaletteOverrides::Flags::IgnoreAlpha) != 0);
+					first = false;
+				}
+				else {
+					bitmap->ReplaceColorBlit(0, 0, *bitmap, bitmap->GetRect(),
+						override->red_original, override->green_original, override->blue_original, override->alpha_original,
+						override->red_replacement, override->green_replacement, override->blue_replacement, override->alpha_replacement, (override->flags & Game_PaletteOverrides::Flags::IgnoreAlpha) != 0);
+				}
+			}
+
+			panorama->SetBitmap(bitmap);
+		} else {
+			// no overrides found
+			panorama->SetBitmap(panorama_bmp);
+		}
+	} else {
+		// map has no panorama
+		panorama->SetBitmap(panorama_bmp);
+	}
+
 	Game_Map::Parallax::Initialize(panorama_bmp->GetWidth(), panorama_bmp->GetHeight());
 	CalculatePanoramaRenderOffset();
 }

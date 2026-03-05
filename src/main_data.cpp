@@ -30,6 +30,7 @@
 #include "game_screen.h"
 #include "game_pictures.h"
 #include "game_map.h"
+#include "game_palette_overrides.h"
 #include "game_variables.h"
 #include "game_strings.h"
 #include "game_switches.h"
@@ -60,6 +61,7 @@ namespace Main_Data {
 	std::unique_ptr<Game_Strings> game_strings;
 	std::unique_ptr<Game_Screen> game_screen;
 	std::unique_ptr<Game_Pictures> game_pictures;
+	std::unique_ptr<Game_PaletteOverrides> game_palette_overrides;
 	std::unique_ptr<Game_Windows> game_windows;
 	std::unique_ptr<Game_Actors> game_actors;
 	std::unique_ptr<Game_Player> game_player;
@@ -115,6 +117,7 @@ void Main_Data::Cleanup() {
 	game_switches.reset();
 	game_screen.reset();
 	game_pictures.reset();
+	game_palette_overrides.reset();
 	game_windows.reset();
 	game_player.reset();
 	game_party.reset();

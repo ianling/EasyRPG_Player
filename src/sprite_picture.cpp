@@ -24,6 +24,7 @@
 #include "game_windows.h"
 #include "player.h"
 #include "bitmap.h"
+#include "output.h"
 
 Sprite_Picture::Sprite_Picture(int pic_id, Drawable::Flags flags)
 	: Sprite(flags),
@@ -166,6 +167,16 @@ void Sprite_Picture::Draw(Bitmap& dst) {
 	SetFlipX((data.easyrpg_flip & lcf::rpg::SavePicture::EasyRpgFlip_x) == lcf::rpg::SavePicture::EasyRpgFlip_x);
 	SetFlipY((data.easyrpg_flip & lcf::rpg::SavePicture::EasyRpgFlip_y) == lcf::rpg::SavePicture::EasyRpgFlip_y);
 	SetBlendType(data.easyrpg_blend_mode);
+
+	if (Main_Data::game_palette_overrides->OverridesChanged(GetPaletteOverridesChangeSeqNum())) {
+		SetPaletteOverrides(
+			Main_Data::game_palette_overrides->CurrentChangeSeqNumber(),
+			Main_Data::game_palette_overrides->GetEffectiveOverrides(
+				Game_PaletteOverrides::Affects::Picture,
+				pic_id,
+				data.name
+		));
+	}
 
 	// Don't draw anything if zoom is at zero, helps avoid a glitchy rotated sprite in the top left corner
 	if (GetZoomX() <= 0.0 || GetZoomY() <= 0.0) {

@@ -120,6 +120,7 @@ void Game_Player::PerformTeleport() {
 	if (map_changed && teleport_target.GetType() != TeleportTarget::eAsyncQuickTeleport) {
 		Main_Data::game_screen->OnMapChange();
 		Main_Data::game_pictures->OnMapChange();
+		Main_Data::game_palette_overrides->OnMapChange();
 		Game_Map::GetInterpreter().OnMapChange();
 	}
 
